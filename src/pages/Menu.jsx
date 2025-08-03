@@ -1,18 +1,18 @@
 import React from "react";
 import { menu1, menu2, menu3, menu4 } from "../assets/img";
 import { Swiper, SwiperSlide } from "swiper/react";
-
-// Importa estilos de Swiper
+import { useTransition, animated, useSpringRef } from "@react-spring/web";
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
-
-// Importa módulos
 import { Pagination, Navigation } from "swiper/modules";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Menu() {
   const [isActive, setIsActive] = useState(0);
+  const [dataAnimation, setDataAnimation] = useState([]);
+  const [primerTitulo, setPrimerTitulo] = useState("");
+  const [segundoTitulo, setSegundoTitulo] = useState("");
   const dataPrueba = [
     {
       nombre: "Ensalada Gourmet de Camarón con Aguacate",
@@ -143,7 +143,7 @@ export default function Menu() {
     },
     {
       nombre: "Ramen Japonés de Cerdo Tonkotsu",
-      url_imagen: "mnt/data/ramen_tonkotsu.png",
+      url_imagen: "/src/assets/img/menu4.png",
       chef: "Haruto Tanaka",
       tipo_platillo: "Sopa",
       descripcion:
@@ -161,32 +161,75 @@ export default function Menu() {
     },
   ];
 
-  const onChangeActive = (index) => {
+  useEffect(() => {
+    const dataSliderAnimation = dataPrueba.map((item) => ({
+      nombre: item.nombre,
+      imagen: item.url_imagen,
+    }));
+    setDataAnimation(dataSliderAnimation);
+    cambiarTitulo(dataSliderAnimation[0].nombre);
+  }, []);
+  const transRef = useSpringRef();
+
+  const transitions = useTransition(isActive, {
+    from: { opacity: 0, transform: "translate3d(100%,0,0)" },
+    enter: { opacity: 1, transform: "translate3d(0%,0,0)" },
+    leave: { opacity: 0, transform: "translate3d(-50%,0,0)" },
+    config: { tension: 220, friction: 30 },
+  });
+
+  useEffect(() => {
+    transRef.start();
+  }, [isActive, transRef]);
+  const onChangeItem = (index, plato) => {
+    cambiarTitulo(plato.nombre);
     setIsActive(index);
-    console.log(index);
+  };
+
+  const cambiarTitulo = (item) => {
+    const nombreArray = item.split(" ");
+    const mitad = Math.ceil(nombreArray.length / 2);
+
+    const primerTitulo = nombreArray.slice(0, mitad);
+    const segundoTitulo = nombreArray.slice(mitad);
+    setPrimerTitulo(primerTitulo.join(" "));
+    setSegundoTitulo(segundoTitulo.join(" "));
   };
 
   return (
     <>
       <div className="w-full h-full flex flex-col md:flex-row">
-        <div className="w-full md:w-3/4 h-full flex flex-col gap-6">
-          <div className="flex flex-col md:flex-row gap-4 md:gap-10 items-center justify-center py-4">
-            <img
-              src={menu1}
-              className="w-1/2 md:w-1/3"
-              style={{ filter: "drop-shadow(1px 1px 10px black)" }}
-            />
-            <div className="text-center md:text-left">
-              <h1 className="text-base md:text-lg text-gray-600">
-                #1 Most loved dish
-              </h1>
-              <p className="text-4xl md:text-7xl font-light">
-                Vegan{" "}
-                <span className="font-bold sm:inline-block	">
-                  <h1>Salad</h1>
-                </span>
-              </p>
-            </div>
+        <div className="w-full md:w-3/4 h-full flex flex-col justify-between gap-6">
+          <div className="relative w-full h-[400px] overflow-hidden">
+            {transitions((style, i) => {
+              const item = dataAnimation[i];
+              if (!item) return null;
+
+              return (
+                <animated.div
+                  key={i}
+                  style={style}
+                  className="absolute inset-0 flex flex-col md:flex-row gap-4 md:gap-10 items-center justify-center"
+                >
+                  <img
+                    src={item.imagen}
+                    alt={item.nombre}
+                    className="w-1/2 md:w-1/3 max-h-[300px] object-contain drop-shadow-lg"
+                  />
+                  <div className="text-center md:text-left">
+                    {isActive == 0 && (
+                      <h1 className="text-base md:text-lg text-gray-600">
+                        #1 Most loved dish
+                      </h1>
+                    )}
+                    <p className="text-4xl md:text-7xl font-light leading-tight">
+                      {primerTitulo}
+                      <h1 className="inline font-bold"> {segundoTitulo}</h1>
+                    </p>
+                  </div>
+                </animated.div>
+              );
+            })}
           </div>
 
           <div className="flex justify-center items-center px-4 md:px-0 pb-4">
@@ -205,7 +248,7 @@ export default function Menu() {
               {dataPrueba.map((plato, index) => (
                 <SwiperSlide key={index}>
                   <button
-                    onClick={() => onChangeActive(index)}
+                    onClick={() => onChangeItem(index, plato)}
                     className={`w-full md:w-32 h-48 p-2 md:p-4 flex flex-col gap-2 items-center justify-center ${
                       isActive === index
                         ? "bg-gray-100 bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-70 shadow-md rounded-3xl border border-white"
